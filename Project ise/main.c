@@ -59,7 +59,6 @@ int main() {
 
     return 0;
 }
-
 // Function to create a new account
 void createAccount() {
     struct Account account;
