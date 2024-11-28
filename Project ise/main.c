@@ -1,4 +1,9 @@
 #include <stdio.h>
+#include <string.h>
+
+#define MAX_NAME 50
+#define MAX_PASSWORD 20
+#define MAX_USERS 100
 
 void login_user();
 void register_user();
@@ -7,9 +12,21 @@ void withdraw_money();
 void transfer_money();
 void view_balance();
 void view_transaction_history();
+void save_user();
+void load_users();
+
+typedef struct {
+    char username[MAX_NAME];
+    char password[MAX_PASSWORD];
+    float balance;
+} User;
+
+User users[MAX_USERS]; // это массив где будут хранится юзеры
+int user_count = 0; // это счетчик юзеров
 
 int main()
 {
+    load_users(); // Эта функция нужна чтобы добавить c файла "users.txt" всех юзеров в массив "users"
     int choice;
 
     while (1)
@@ -85,7 +102,41 @@ int main()
 
 void register_user()
 {
-    printf("Register\n");
+    char username[MAX_NAME], password[MAX_PASSWORD];
+    // Берем инпуты у юзера
+    printf("Enter your login name : ");
+    scanf("%s", username);
+    printf("Enter the password : ");
+    scanf("%s", password);
+
+    // Потом добавляем данные в массив который создали в начале
+    strcpy(users[user_count].username, username);
+    strcpy(users[user_count].password, password);
+    users[user_count].balance = 0;
+    user_count++;
+    save_user(); // Сохраняем чела
+
+    printf("User registered successfully!\n");
+    
+}
+
+void save_user() {
+    FILE *file = fopen("users.txt", "w");
+    for (int i = 0; i < user_count; i++) {
+        fprintf(file, "%s %s %f\n", users[i].username, users[i].password, users[i].balance);
+    }
+    fclose(file);
+}
+
+void load_users() {
+    FILE *file = fopen("users.txt", "r");
+    if (file == NULL) return;
+
+    while (fscanf(file, "%s %s %f %d", users[user_count].username, users[user_count].password, &users[user_count].balance) != EOF) {
+        user_count++;
+    }
+
+    fclose(file);
 }
 
 void login_user()
