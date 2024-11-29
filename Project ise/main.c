@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <string.h>
 
+
 #define MAX_NAME 50
 #define MAX_PASSWORD 20
 #define MAX_USERS 100
 #define MAX_HISTORY 20
+
 
 void login_user();
 void register_user();
@@ -18,6 +20,7 @@ void load_users();
 void save_transaction_history();
 void load_transaction_history();
 int find_user_by_username(const char* username);
+
 
 typedef struct {
     char username[MAX_NAME];  // Логин пользователя
@@ -107,6 +110,7 @@ int main()
     return 0;
 }
 
+
 void register_user()
 {
     char username[MAX_NAME], password[MAX_PASSWORD];
@@ -136,6 +140,7 @@ void register_user()
     printf("User registered successfully!\n");
 }
 
+
 int find_user_by_username(const char* username)
 {
     for (int i = 0; i < user_count; i++) {
@@ -145,6 +150,7 @@ int find_user_by_username(const char* username)
     }
     return -1; // Если пользователь не найден
 }
+
 
 void save_user() {
     FILE *file = fopen("users.txt", "w");  // Открываем файл с режимом записи (перезапись)
@@ -161,6 +167,7 @@ void save_user() {
     fclose(file);
     printf("User data saved successfully!\n");
 }
+
 
 void load_users() {
     FILE *file = fopen("users.txt", "r");
@@ -371,6 +378,3 @@ void view_transaction_history()
         printf("%s\n", users[logged_in_user].transaction_history[i]);
     }
 }
-
-
-
