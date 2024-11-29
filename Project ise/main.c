@@ -110,6 +110,7 @@ void register_user()
     scanf("%s", password);
 
     // Потом добавляем данные в массив который создали в начале
+    
     strcpy(users[user_count].username, username);
     strcpy(users[user_count].password, password);
     users[user_count].balance = 0;
