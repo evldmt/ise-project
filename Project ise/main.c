@@ -7,6 +7,7 @@
 #define MAX_PASSWORD 20
 #define MAX_USERS 100
 #define MAX_HISTORY 20
+#define MAX_EMAIL 20
 
 void login_user();
 void register_user();
@@ -27,6 +28,7 @@ int  find_user_by_username(const char* username);
 typedef struct {
     char username[MAX_NAME];  // Логин пользователя
     char password[MAX_PASSWORD]; // Пароль
+    char email[MAX_EMAIL]; //почта для сброса аккаунта
     float balance;  // Баланс пользователя
     char transaction_history[MAX_HISTORY][100];  // История транзакций
     int history_count;  // Количество транзакций
@@ -148,7 +150,7 @@ int main()
 
 void register_user()
 {
-    char username[MAX_NAME], password[MAX_PASSWORD];
+    char username[MAX_NAME], password[MAX_PASSWORD], email[MAX_EMAIL];
     printf("Enter your username (login): ");
     getchar(); // Чтобы очистить символ новой строки
     fgets(username, MAX_NAME, stdin);
@@ -163,9 +165,15 @@ void register_user()
     printf("Enter the password: ");
     fgets(password, MAX_PASSWORD, stdin);
     password[strcspn(password, "\n")] = '\0';  // Удаляем символ новой строки
+    
+    printf("Enter your email: ");//помимо юсернейма и пароля нам нужна еще почта чтобы сбросить пароль
+    fgets(email, MAX_EMAIL, stdin);
+    email[strcspn(password, "\n")] = '\0';
+    
 
     strcpy(users[user_count].username, username);
     strcpy(users[user_count].password, password);
+    strcpy(users[user_count].email, email);
     users[user_count].balance = 0;
     users[user_count].history_count = 0;  // Инициализируем историю транзакций
     users[user_count].daily_limit = 300000.0; //дефолтный лимит
@@ -308,7 +316,7 @@ void login_user()
 
 void reset_password()
 {
-    char username[MAX_NAME], new_password[MAX_PASSWORD];
+    char username[MAX_NAME], new_password[MAX_PASSWORD], email[MAX_EMAIL], entered_email[MAX_EMAIL];
     printf("Enter your username: ");
     getchar();// Чтобы очистить символ новой строки
     fgets(username, MAX_NAME, stdin);
@@ -319,6 +327,15 @@ void reset_password()
         printf("User not found!\n");
         return;
     }
+    //проверка пользователя эл.почтой
+    printf("Enter the username's email: ");
+    fgets(email, MAX_EMAIL, stdin);
+    entered_email[strcspn(entered_email, "\n")] = '\0';
+    if (strcmp(users[user_index].email, entered_email) != 0){
+        printf("Email does not match our records. Password reset denied.\n");
+        return;
+    }
+    //новый пароль
     printf("Enter your new password: ");
     fgets(new_password, MAX_PASSWORD, stdin);
     new_password[strcspn(new_password, "\n")] = '\0';
