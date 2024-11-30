@@ -204,9 +204,10 @@ void save_user() {
 
     // Записываем данные всех пользователей
     for (int i = 0; i < user_count; i++) {
-        fprintf(file, "%s %s %f %f %f\n",
+        fprintf(file, "%s %s %s %f %f %f\n",
                 users[i].username,
                 users[i].password,
+                users[i].email,
                 users[i].balance,
                 users[i].daily_limit,
                 users[i].daily_transaction_total);
@@ -220,9 +221,10 @@ void load_users() {
     FILE *file = fopen("users.txt", "r");
     if (file == NULL) return; // Если файл пуст или не найден, выходим
 
-    while (fscanf(file, "%s %s %f %f %f",
+    while (fscanf(file, "%s %s %s %f %f %f",
                   users[user_count].username,
                   users[user_count].password,
+                  users[user_count].email,
                   &users[user_count].balance,
                   &users[user_count].daily_limit,
                   &users[user_count].daily_transaction_total) != EOF) {
