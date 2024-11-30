@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
+#include <time.h>
 
 #define MAX_NAME 50
 #define MAX_PASSWORD 20
@@ -17,7 +19,10 @@ void save_user();
 void load_users();
 void save_transaction_history();
 void load_transaction_history();
-int find_user_by_username(const char* username);
+void reset_password();
+void set_daily_limit();
+void check_and_reset_daily_total();
+int  find_user_by_username(const char* username);
 
 typedef struct {
     char username[MAX_NAME];  // Логин пользователя
@@ -25,6 +30,9 @@ typedef struct {
     float balance;  // Баланс пользователя
     char transaction_history[MAX_HISTORY][100];  // История транзакций
     int history_count;  // Количество транзакций
+    float daily_limit; // дневной лимит на переводы
+    float daily_transaction_total; // общая сумма транзакций за день
+    char last_transaction_date[11]; //функция времени для обнуления суммы транзакций за день
 } User;
 
 User users[MAX_USERS]; // Массив всех пользователей
@@ -36,6 +44,7 @@ int main()
     load_users(); // Загрузка пользователей из файла
     load_transaction_history(); // Загрузка истории транзакций из файла
     int choice;
+    char forgotpasswordanswer[10];//эта штука от reset_passwrod
 
     while (1)
     {
@@ -56,7 +65,7 @@ int main()
                 // Основное меню после успешного входа
                 while (1)
                 {
-                    printf("1. Deposit Money\n2. Withdraw Money\n3. Transfer Money\n4. View Balance\n5. View Transaction History\n6. Logout\nEnter your choice: ");
+                    printf("1. Deposit Money\n2. Withdraw Money\n3. Transfer Money\n4. View Balance\n5. View Transaction History\n6. Set Daily Limit\n7. Logout\nEnter your choice: ");
                     scanf("%d", &choice);
 
                     if (choice == 1)
@@ -81,12 +90,42 @@ int main()
                     }
                     else if (choice == 6)
                     {
+                        set_daily_limit();
+                    }
+                    else if (choice == 7)
+                    {
                         logged_in_user = -1; // Выход из системы
                         break;
                     }
                     else
                     {
                         printf("Invalid choice!\n");
+                    }
+                }
+            }
+            else if (logged_in_user == -1)//функция сброса пароля если логин не успешно выполнен
+            {
+                while (1)
+                {
+                    printf("Invalid login or password!\n");
+                    printf("Forgot password?  (YES/NO): ");
+                    scanf("%s", &forgotpasswordanswer);
+                    
+                    //часть ниже нужна чтобы производить операции not case sensitive
+                    for (int i = 0; forgotpasswordanswer[i]; i++){
+                        forgotpasswordanswer[i] = tolower(forgotpasswordanswer[i]);
+                    }
+                    
+                    if (strcmp(forgotpasswordanswer, "yes")==0) {//когда ответ yes будет перекидывать на reset_passwrod
+                        reset_password();
+                        break;
+                    }
+                    else if (strcmp(forgotpasswordanswer, "no")==0) {//если no то тогда обратно просто login_user
+                        printf("Returning to login\n");
+                        break;
+                    }
+                    else{
+                        printf("Choose only (YES/NO)! ");//если левый ответ то тогда предупреждение
                     }
                 }
             }
@@ -129,6 +168,8 @@ void register_user()
     strcpy(users[user_count].password, password);
     users[user_count].balance = 0;
     users[user_count].history_count = 0;  // Инициализируем историю транзакций
+    users[user_count].daily_limit = 300000.0; //дефолтный лимит
+    users[user_count].daily_transaction_total = 0.0; // инициалицазия суммы переводов
     user_count++;
 
     save_user(); // Сохраняем данные в файл
@@ -155,7 +196,12 @@ void save_user() {
 
     // Записываем данные всех пользователей
     for (int i = 0; i < user_count; i++) {
-        fprintf(file, "%s %s %f\n", users[i].username, users[i].password, users[i].balance);
+        fprintf(file, "%s %s %f %f %f\n",
+                users[i].username,
+                users[i].password,
+                users[i].balance,
+                users[i].daily_limit,
+                users[i].daily_transaction_total);
     }
 
     fclose(file);
@@ -166,7 +212,12 @@ void load_users() {
     FILE *file = fopen("users.txt", "r");
     if (file == NULL) return; // Если файл пуст или не найден, выходим
 
-    while (fscanf(file, "%s %s %f", users[user_count].username, users[user_count].password, &users[user_count].balance) != EOF) {
+    while (fscanf(file, "%s %s %f %f %f",
+                  users[user_count].username,
+                  users[user_count].password,
+                  &users[user_count].balance,
+                  &users[user_count].daily_limit,
+                  &users[user_count].daily_transaction_total) != EOF) {
         users[user_count].history_count = 0; // Инициализируем историю транзакций
         user_count++;
     }
@@ -255,6 +306,27 @@ void login_user()
     logged_in_user = -1; // Устанавливаем -1, если логин не был успешен
 }
 
+void reset_password()
+{
+    char username[MAX_NAME], new_password[MAX_PASSWORD];
+    printf("Enter your username: ");
+    getchar();// Чтобы очистить символ новой строки
+    fgets(username, MAX_NAME, stdin);
+    username[strcspn(username, "\n")] = '\0';// Удаляем символ новой строки
+    
+    int user_index = find_user_by_username(username);//ищем пользователя
+    if (user_index == -1) {//если пользователя не существует
+        printf("User not found!\n");
+        return;
+    }
+    printf("Enter your new password: ");
+    fgets(new_password, MAX_PASSWORD, stdin);
+    new_password[strcspn(new_password, "\n")] = '\0';
+    
+    strcpy(users[user_index].password, new_password);//заменяем старый пароль на новый
+    save_user();
+}
+
 void deposit_money()
 {
     float amount;
@@ -293,8 +365,14 @@ void withdraw_money()
         printf("Invalid amount!\n");
         return;
     }
+    
+    if(users[logged_in_user].daily_transaction_total + amount > users[logged_in_user].daily_limit){
+        printf("Transaction exeeds your daily limit %2f! \n", users[logged_in_user].daily_limit);
+        return;
+    }
 
     users[logged_in_user].balance -= amount;
+    users[logged_in_user].daily_transaction_total += amount;
 
     if (users[logged_in_user].history_count < MAX_HISTORY)
     {
@@ -311,6 +389,7 @@ void withdraw_money()
 
 void transfer_money()
 {
+    check_and_reset_daily_total();
     char recipient_username[MAX_NAME];
     float amount;
     printf("Enter recipient username: ");
@@ -334,6 +413,12 @@ void transfer_money()
         printf("Invalid amount!\n");
         return;
     }
+    
+    if (users[logged_in_user].daily_transaction_total + amount > users[logged_in_user].daily_limit)
+        {
+            printf("Transaction exceeds your daily limit of %.2f!\n", users[logged_in_user].daily_limit);
+            return;
+        }
 
     users[logged_in_user].balance -= amount;
     users[recipient_index].balance += amount;
@@ -353,7 +438,9 @@ void transfer_money()
                  "Received: %.2f from %s", amount, users[logged_in_user].username);
         users[recipient_index].history_count++;
     }
-
+    
+    users[logged_in_user].daily_transaction_total += amount;
+    
     save_transaction_history();
     save_user();
     printf("Transfer successful! Your new balance: %.2f\n", users[logged_in_user].balance);
@@ -372,3 +459,30 @@ void view_transaction_history()
     }
 }
 
+void set_daily_limit()
+{
+    float new_limit;
+    printf("Enter your new daily limit: ");
+    scanf("%f", &new_limit);
+    
+    if (new_limit <= 0){
+        printf("Invalid limit!\n");
+        return;
+    }
+    users[logged_in_user].daily_limit = new_limit;
+    save_user();
+    printf("Daily transaction updated to %.2f!\n", new_limit);
+}
+
+void check_and_reset_daily_total() {
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    char current_date[11];  // "YYYY-MM-DD" format
+    snprintf(current_date, sizeof(current_date), "%04d-%02d-%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+
+    if (strcmp(users[logged_in_user].last_transaction_date, current_date) != 0) {
+        users[logged_in_user].daily_transaction_total = 0.0;  // Reset daily total
+        strcpy(users[logged_in_user].last_transaction_date, current_date);  // Update the date
+        save_user();  // Save the updated date
+    }
+}
