@@ -156,15 +156,28 @@ void login_user() {
 
 // Функция для сброса пароля
 void reset_password(int user_index) {
+    char email[MAX_EMAIL];
     char new_password[MAX_PASSWORD];
-    printf("Enter a new password: ");
+
+    printf("Enter your email: ");
     clear_input_buffer();
+    fgets(email, MAX_EMAIL, stdin);
+    email[strcspn(email, "\n")] = '\0';
+
+    // Проверяем, совпадает ли введённый email с записанным
+    if (strcmp(users[user_index].email, email) != 0) {
+        printf("Email does not match our records!\n");
+        return;
+    }
+
+    printf("Enter your new password: ");
     fgets(new_password, MAX_PASSWORD, stdin);
     new_password[strcspn(new_password, "\n")] = '\0';
 
+    // Обновляем пароль пользователя
     strcpy(users[user_index].password, new_password);
     save_users();
-    printf("Password reset successful!\n");
+    printf("Password reset successfully!\n");
 }
 
 // Функция для управления сессией пользователя
