@@ -32,20 +32,23 @@ void withdraw_money();
 void transfer_money();
 void view_balance();
 void view_recent_transactions();
-void record_transaction(const char* transaction);
+void record_transaction_for_user(const char* transaction);
 void save_users();
 void load_users();
 int find_user_by_username(const char* username);
 void clear_input_buffer();
+int get_valid_choice(int min, int max);
 
 // Основная функция
 int main() {
     load_users();
 
     while (1) {
-        int choice;
-        printf("\n1. Register\n2. Login\n3. Exit\nEnter your choice: ");
-        scanf("%d", &choice);
+        printf("\n--- Main Menu ---\n");
+        printf("1. Register\n");
+        printf("2. Login\n");
+        printf("3. Exit\n");
+        int choice = get_valid_choice(1, 3);
 
         switch (choice) {
             case 1:
@@ -60,8 +63,6 @@ int main() {
             case 3:
                 printf("Exiting program. Goodbye!\n");
                 return 0;
-            default:
-                printf("Invalid choice! Please try again.\n");
         }
     }
 }
@@ -70,6 +71,7 @@ int main() {
 void register_user() {
     char username[MAX_NAME], password[MAX_PASSWORD], email[MAX_EMAIL];
 
+    printf("\n--- Register ---\n");
     printf("Enter username: ");
     clear_input_buffer();
     fgets(username, MAX_NAME, stdin);
@@ -92,6 +94,7 @@ void register_user() {
     strcpy(new_user.username, username);
     strcpy(new_user.email, email);
     strcpy(new_user.password, password);
+    new_user.balance = 0.0f;
 
     users[user_count++] = new_user;
     save_users();
@@ -111,8 +114,9 @@ int find_user_by_username(const char* username) {
 // Функция для авторизации пользователя
 void login_user() {
     char username[MAX_NAME], password[MAX_PASSWORD];
-    int attempts = 0;  // Счётчик попыток ввода пароля
+    int attempts = 0;
 
+    printf("\n--- Login ---\n");
     printf("Enter username: ");
     clear_input_buffer();
     fgets(username, MAX_NAME, stdin);
@@ -132,21 +136,21 @@ void login_user() {
         if (strcmp(users[user_index].password, password) == 0) {
             logged_in_user = user_index;
             printf("Login successful! Welcome, %s (%s).\n", users[user_index].username, users[user_index].email);
-            return;  // Успешный вход, выходим из функции
+            return;
         } else {
             attempts++;
             printf("Incorrect password! Attempts left: %d\n", 2 - attempts);
         }
     }
 
-    // Если неправильный пароль введён дважды, предложить сбросить пароль через email
+    
     char choice;
     printf("You have entered the wrong password 2 times. Do you want to reset your password? (y/n): ");
-    clear_input_buffer();
     scanf("%c", &choice);
+    
 
     if (choice == 'y' || choice == 'Y') {
-        reset_password(user_index);  // Вызов функции сброса пароля
+        reset_password(user_index);
     }
 }
 
@@ -158,7 +162,6 @@ void reset_password(int user_index) {
     fgets(new_password, MAX_PASSWORD, stdin);
     new_password[strcspn(new_password, "\n")] = '\0';
 
-    // Обновление пароля
     strcpy(users[user_index].password, new_password);
     save_users();
     printf("Password reset successful!\n");
@@ -167,9 +170,14 @@ void reset_password(int user_index) {
 // Функция для управления сессией пользователя
 void manage_user_session() {
     while (1) {
-        int choice;
-        printf("\n1. Deposit Money\n2. Withdraw Money\n3. Transfer Money\n4. View Balance\n5. View Transactionse\n6. Logout\nEnter your choice: ");
-        scanf("%d", &choice);
+        printf("\n--- User Menu ---\n");
+        printf("1. Deposit Money\n");
+        printf("2. Withdraw Money\n");
+        printf("3. Transfer Money\n");
+        printf("4. View Balance\n");
+        printf("5. View Recent Transactions\n");
+        printf("6. Logout\n");
+        int choice = get_valid_choice(1, 6);
 
         switch (choice) {
             case 1:
@@ -191,24 +199,24 @@ void manage_user_session() {
                 logged_in_user = -1;
                 printf("Logged out successfully.\n");
                 return;
-            default:
-                printf("Invalid choice! Please try again.\n");
         }
     }
 }
 
-// Функция для записи транзакции в файл
-void record_transaction(const char* transaction) {
-    FILE *file = fopen("transactions.txt", "a");
+// Функция для записи транзакции
+void record_transaction_for_user(const char* transaction) {
+    char filename[MAX_NAME + 15];
+    snprintf(filename, sizeof(filename), "%s_transactions.txt", users[logged_in_user].username);
+    FILE *file = fopen(filename, "a");
     if (!file) {
         printf("Error recording transaction!\n");
         return;
     }
-    fprintf(file, "User: %s | %s\n", users[logged_in_user].username, transaction);
+    fprintf(file, "%s\n", transaction);
     fclose(file);
 }
 
-// Функция для пополнения баланса
+// Функции пополнения, снятия, перевода и просмотра баланса
 void deposit_money() {
     float amount;
     printf("Enter amount to deposit: ");
@@ -219,11 +227,10 @@ void deposit_money() {
 
     char transaction[100];
     snprintf(transaction, sizeof(transaction), "Deposited: %.2f, New Balance: %.2f", amount, users[logged_in_user].balance);
-    record_transaction(transaction);
+    record_transaction_for_user(transaction);
     save_users();
 }
 
-// Функция для снятия денег
 void withdraw_money() {
     float amount;
     printf("Enter amount to withdraw: ");
@@ -235,14 +242,13 @@ void withdraw_money() {
 
         char transaction[100];
         snprintf(transaction, sizeof(transaction), "Withdrew: %.2f, New Balance: %.2f", amount, users[logged_in_user].balance);
-        record_transaction(transaction);
+        record_transaction_for_user(transaction);
         save_users();
     } else {
         printf("Insufficient funds!\n");
     }
 }
 
-// Функция для перевода денег
 void transfer_money() {
     char recipient_username[MAX_NAME];
     float amount;
@@ -265,30 +271,69 @@ void transfer_money() {
         users[logged_in_user].balance -= amount;
         users[recipient_index].balance += amount;
         printf("Transfer successful! Your new balance: %.2f\n", users[logged_in_user].balance);
-        printf("Recipient %s's new balance: %.2f\n", users[recipient_index].username, users[recipient_index].balance);
 
         // Запись транзакции для отправителя
-        char transaction[200];
-        snprintf(transaction, sizeof(transaction), "Transferred: %.2f to %s, Your New Balance: %.2f", amount, recipient_username, users[logged_in_user].balance);
-        record_transaction(transaction);
+        char sender_transaction[200];
+        snprintf(sender_transaction, sizeof(sender_transaction), "Transferred: %.2f to %s, New Balance: %.2f",
+                 amount, recipient_username, users[logged_in_user].balance);
+        record_transaction_for_user(sender_transaction);
 
         // Запись транзакции для получателя
-        // Запись транзакции для получателя (изменено)
-        snprintf(transaction, sizeof(transaction), "User: %s | Received: %.2f from %s, New Balance: %.2f", users[recipient_index].username, amount, users[logged_in_user].username, users[recipient_index].balance);
-        record_transaction(transaction);
+        char recipient_transaction[200];
+        snprintf(recipient_transaction, sizeof(recipient_transaction), "Received: %.2f from %s, New Balance: %.2f",
+                 amount, users[logged_in_user].username, users[recipient_index].balance);
+        
+        // Создаем файл транзакций получателя
+        char filename[MAX_NAME + 15];
+        snprintf(filename, sizeof(filename), "%s_transactions.txt", users[recipient_index].username);
+        FILE *recipient_file = fopen(filename, "a");
+        if (recipient_file) {
+            fprintf(recipient_file, "%s\n", recipient_transaction);
+            fclose(recipient_file);
+        } else {
+            printf("Error recording transaction for recipient!\n");
+        }
 
         save_users();
     } else {
         printf("Insufficient funds!\n");
     }
 }
-
-// Функция для просмотра баланса
 void view_balance() {
     printf("Your balance: %.2f\n", users[logged_in_user].balance);
 }
 
-// Функция для сохранения пользователей в файл
+void view_recent_transactions() {
+    char filename[MAX_NAME + 15];
+    snprintf(filename, sizeof(filename), "%s_transactions.txt", users[logged_in_user].username);
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        printf("No transaction records found.\n");
+        return;
+    }
+
+    char line[200];
+    printf("\nTransactions for user %s:\n", users[logged_in_user].username);
+    while (fgets(line, sizeof(line), file)) {
+        printf("%s", line);
+    }
+    fclose(file);
+}
+
+// Валидация ввода
+int get_valid_choice(int min, int max) {
+    int choice;
+    while (1) {
+        printf("Enter your choice (%d-%d): ", min, max);
+        if (scanf("%d", &choice) == 1 && choice >= min && choice <= max) {
+            return choice;
+        }
+        printf("Invalid input. Please try again.\n");
+        clear_input_buffer();
+    }
+}
+
+// Чтение и запись пользователей в файл
 void save_users() {
     FILE *file = fopen("users.txt", "w");
     if (!file) {
@@ -297,57 +342,27 @@ void save_users() {
     }
 
     for (int i = 0; i < user_count; i++) {
-        fprintf(file, "%s %s %s %.2f %.2f\n", users[i].username, users[i].password, users[i].email,
-                users[i].balance, users[i].daily_transaction_total);
+        fprintf(file, "%s %s %s %.2f\n", users[i].username, users[i].password, users[i].email, users[i].balance);
     }
-
     fclose(file);
 }
 
-// Функция для загрузки пользователей из файла
 void load_users() {
     FILE *file = fopen("users.txt", "r");
-    if (!file) {
-        printf("No users found, starting fresh.\n");
-        return;
-    }
+    if (!file) return;
 
-    while (fscanf(file, "%s %s %s %f %f\n", users[user_count].username, users[user_count].password,
-                   users[user_count].email, &users[user_count].balance, &users[user_count].daily_transaction_total) == 5) {
+    while (fscanf(file, "%s %s %s %f",
+           users[user_count].username,
+           users[user_count].password,
+           users[user_count].email,
+           &users[user_count].balance) == 4) {
         user_count++;
     }
-
     fclose(file);
 }
-void view_recent_transactions() {
-    FILE *file = fopen("transactions.txt", "r");
-    if (!file) {
-        printf("No transaction records found.\n");
-        return;
-    }
 
-    char line[200];
-    int found = 0; // Флаг для проверки наличия транзакций
-
-    printf("\nTransactions for user %s:\n", users[logged_in_user].username);
-
-    // Считываем файл построчно
-    while (fgets(line, sizeof(line), file)) {
-        // Проверяем, относится ли строка к текущему пользователю
-        if (strstr(line, users[logged_in_user].username)) {
-            printf("%s", line); // Печатаем транзакцию
-            found = 1; // Устанавливаем флаг, если найдена транзакция
-        }
-    }
-
-    fclose(file);
-
-    if (!found) {
-        printf("No transactions found for user %s.\n", users[logged_in_user].username);
-    }
-}
-
-// Функция для очистки буфера ввода
+// Очистка буфера ввода
 void clear_input_buffer() {
-    while (getchar() != '\n');
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
 }
