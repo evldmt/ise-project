@@ -31,6 +31,7 @@ void deposit_money();
 void withdraw_money();
 void transfer_money();
 void view_balance();
+void view_recent_transactions();
 void record_transaction(const char* transaction);
 void save_users();
 void load_users();
@@ -167,7 +168,7 @@ void reset_password(int user_index) {
 void manage_user_session() {
     while (1) {
         int choice;
-        printf("\n1. Deposit Money\n2. Withdraw Money\n3. Transfer Money\n4. View Balance\n5. Logout\nEnter your choice: ");
+        printf("\n1. Deposit Money\n2. Withdraw Money\n3. Transfer Money\n4. View Balance\n5. View Transactionse\n6. Logout\nEnter your choice: ");
         scanf("%d", &choice);
 
         switch (choice) {
@@ -184,6 +185,9 @@ void manage_user_session() {
                 view_balance();
                 break;
             case 5:
+                view_recent_transactions();
+                break;
+            case 6:
                 logged_in_user = -1;
                 printf("Logged out successfully.\n");
                 return;
@@ -314,6 +318,33 @@ void load_users() {
     }
 
     fclose(file);
+}
+void view_recent_transactions() {
+    FILE *file = fopen("transactions.txt", "r");
+    if (!file) {
+        printf("No transaction records found.\n");
+        return;
+    }
+
+    char line[200];
+    int found = 0; // Флаг для проверки наличия транзакций
+
+    printf("\nTransactions for user %s:\n", users[logged_in_user].username);
+
+    // Считываем файл построчно
+    while (fgets(line, sizeof(line), file)) {
+        // Проверяем, относится ли строка к текущему пользователю
+        if (strstr(line, users[logged_in_user].username)) {
+            printf("%s", line); // Печатаем транзакцию
+            found = 1; // Устанавливаем флаг, если найдена транзакция
+        }
+    }
+
+    fclose(file);
+
+    if (!found) {
+        printf("No transactions found for user %s.\n", users[logged_in_user].username);
+    }
 }
 
 // Функция для очистки буфера ввода
