@@ -264,7 +264,7 @@ void manage_user_session() {
 // Функция для записи транзакции
 void record_transaction_for_user(const char* transaction) {
     char filename[MAX_NAME + 15];
-    snprintf(filename, sizeof(filename), "%s_transactions.txt", users[logged_in_user].username);
+    snprintf(filename, sizeof(filename), "personal_transactions/%s_transactions.txt", users[logged_in_user].username);
     FILE *file = fopen(filename, "a");
     if (!file) {
         printf("Error recording transaction!\n");
@@ -349,7 +349,7 @@ void transfer_money() {
         
         // Создаем файл транзакций получателя
         char filename[MAX_NAME + 15];
-        snprintf(filename, sizeof(filename), "%s_transactions.txt", users[recipient_index].username);
+        snprintf(filename, sizeof(filename), "personal_transactions/%s_transactions.txt", users[recipient_index].username);
         FILE *recipient_file = fopen(filename, "a");
         if (recipient_file) {
             fprintf(recipient_file, "%s\n", recipient_transaction);
@@ -369,7 +369,7 @@ void view_balance() {
 
 void view_recent_transactions() {
     char filename[MAX_NAME + 15];
-    snprintf(filename, sizeof(filename), "%s_transactions.txt", users[logged_in_user].username);
+    snprintf(filename, sizeof(filename), "personal_transactions/%s_transactions.txt", users[logged_in_user].username);
     FILE *file = fopen(filename, "r");
     if (!file) {
         printf("No transaction records found.\n");
@@ -429,7 +429,7 @@ void view_transactions_by_date() {
     date[strcspn(date, "\n")] = '\0';  // Убираем символ новой строки
 
     char filename[MAX_NAME + 15];
-    snprintf(filename, sizeof(filename), "%s_transactions.txt", users[logged_in_user].username);
+    snprintf(filename, sizeof(filename), "personal_transactions/%s_transactions.txt", users[logged_in_user].username);
     FILE *file = fopen(filename, "r");
     if (!file) {
         printf("No transaction records found.\n");
