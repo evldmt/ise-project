@@ -32,6 +32,7 @@ void withdraw_money();
 void transfer_money();
 void view_balance();
 void view_recent_transactions();
+void view_transactions_by_date();
 void record_transaction_for_user(const char* transaction);
 void save_users();
 void load_users();
@@ -76,6 +77,7 @@ void register_user() {
     clear_input_buffer();
     fgets(username, MAX_NAME, stdin);
     username[strcspn(username, "\n")] = '\0';
+    
 
     if (find_user_by_username(username) != -1) {
         printf("Username already exists!\n");
@@ -112,27 +114,55 @@ int find_user_by_username(const char* username) {
 }
 
 // Функция для авторизации пользователя
+void get_time(char *datetime, size_t size) {
+    time_t current_time;
+    struct tm *local_time;
+
+    // Получаем текущее время
+    current_time = time(NULL);
+    if (current_time == -1) {
+        printf("Error getting current time\n");
+        return;
+    }
+
+    // Преобразуем текущее время в структуру tm
+    local_time = localtime(&current_time);
+    if (local_time == NULL) {
+        printf("Error converting time to local time\n");
+        return;
+    }
+
+    // Форматируем строку с датой и временем
+    snprintf(datetime, size, "%02d-%02d-%04d,%02d:%02d:%02d",
+             local_time->tm_mday,           // День
+             local_time->tm_mon + 1,        // Месяц (с 0, поэтому +1)
+             local_time->tm_year + 1900,    // Год (с 1900, поэтому +1900)
+             local_time->tm_hour,           // Часы
+             local_time->tm_min,
+             local_time->tm_sec);          
+}
+
 void login_user() {
     char username[MAX_NAME], password[MAX_PASSWORD];
     int attempts = 0;
-
+    
     printf("\n--- Login ---\n");
     printf("Enter username: ");
     clear_input_buffer();
     fgets(username, MAX_NAME, stdin);
     username[strcspn(username, "\n")] = '\0';
-
+    
     int user_index = find_user_by_username(username);
     if (user_index == -1) {
         printf("User not found!\n");
         return;
     }
-
+    
     while (attempts < 2) {
         printf("Enter password: ");
         fgets(password, MAX_PASSWORD, stdin);
         password[strcspn(password, "\n")] = '\0';
-
+        
         if (strcmp(users[user_index].password, password) == 0) {
             logged_in_user = user_index;
             printf("Login successful! Welcome, %s (%s).\n", users[user_index].username, users[user_index].email);
@@ -142,15 +172,22 @@ void login_user() {
             printf("Incorrect password! Attempts left: %d\n", 2 - attempts);
         }
     }
-
     
+    // After 2 failed attempts, prompt for password reset
     char choice;
-    printf("You have entered the wrong password 2 times. Do you want to reset your password? (y/n): ");
-    scanf("%c", &choice);
-    
-
-    if (choice == 'y' || choice == 'Y') {
-        reset_password(user_index);
+    while (1) {
+        printf("You have entered the wrong password 2 times. Do you want to reset your password? (y/n): ");
+        scanf("%c", &choice);
+        
+        if (choice == 'y' || choice == 'Y') {
+            reset_password(user_index);  // Call reset password function
+            return; // Exit the login function
+        } else if (choice == 'n' || choice == 'N') {
+            printf("Password reset canceled.\n");
+            return; // Exit the login function
+        } else {
+            printf("Invalid input. Please enter 'y' or 'n'.\n");
+        }
     }
 }
 
@@ -158,26 +195,34 @@ void login_user() {
 void reset_password(int user_index) {
     char email[MAX_EMAIL];
     char new_password[MAX_PASSWORD];
+    int retry_count = 0;
 
-    printf("Enter your email: ");
-    clear_input_buffer();
-    fgets(email, MAX_EMAIL, stdin);
-    email[strcspn(email, "\n")] = '\0';
+    while (retry_count < 3) {  // Даем 3 попытки для ввода email
+        printf("Enter your email: ");
+        fgets(email, MAX_EMAIL, stdin);
+        email[strcspn(email, "\n")] = '\0';
 
-    // Проверяем, совпадает ли введённый email с записанным
-    if (strcmp(users[user_index].email, email) != 0) {
-        printf("Email does not match our records!\n");
-        return;
+        // Проверяем, совпадает ли введённый email с записанным
+        if (strcmp(users[user_index].email, email) != 0) {
+            retry_count++;
+            printf("Email does not match our records! Attempts left: %d\n", 3 - retry_count);
+            if (retry_count == 3) {
+                printf("You have exceeded the maximum attempts for resetting the password.\n");
+                return;  // Прекращаем попытки сброса пароля после 3 неверных вводов
+            }
+        } else {
+            // Если email совпал, спрашиваем новый пароль
+            printf("Enter your new password: ");
+            fgets(new_password, MAX_PASSWORD, stdin);
+            new_password[strcspn(new_password, "\n")] = '\0';
+
+            // Обновляем пароль пользователя
+            strcpy(users[user_index].password, new_password);
+            save_users();
+            printf("Password reset successfully!\n");
+            return;  // Успешный сброс пароля
+        }
     }
-
-    printf("Enter your new password: ");
-    fgets(new_password, MAX_PASSWORD, stdin);
-    new_password[strcspn(new_password, "\n")] = '\0';
-
-    // Обновляем пароль пользователя
-    strcpy(users[user_index].password, new_password);
-    save_users();
-    printf("Password reset successfully!\n");
 }
 
 // Функция для управления сессией пользователя
@@ -231,7 +276,9 @@ void record_transaction_for_user(const char* transaction) {
 
 // Функции пополнения, снятия, перевода и просмотра баланса
 void deposit_money() {
+    char datetime[50];
     float amount;
+    get_time(datetime, sizeof(datetime));
     printf("Enter amount to deposit: ");
     scanf("%f", &amount);
 
@@ -239,7 +286,7 @@ void deposit_money() {
     printf("Deposit successful! New balance: %.2f\n", users[logged_in_user].balance);
 
     char transaction[100];
-    snprintf(transaction, sizeof(transaction), "Deposited: %.2f, New Balance: %.2f", amount, users[logged_in_user].balance);
+    snprintf(transaction, sizeof(transaction), "Deposited: %.2f, New Balance: %.2f. Date And Time: %s", amount, users[logged_in_user].balance,datetime);
     record_transaction_for_user(transaction);
     save_users();
 }
@@ -265,6 +312,8 @@ void withdraw_money() {
 void transfer_money() {
     char recipient_username[MAX_NAME];
     float amount;
+    char datetime[50];
+    get_time(datetime,sizeof(datetime));
 
     printf("Enter recipient username: ");
     clear_input_buffer();
@@ -287,8 +336,8 @@ void transfer_money() {
 
         // Запись транзакции для отправителя
         char sender_transaction[200];
-        snprintf(sender_transaction, sizeof(sender_transaction), "Transferred: %.2f to %s, New Balance: %.2f",
-                 amount, recipient_username, users[logged_in_user].balance);
+        snprintf(sender_transaction, sizeof(sender_transaction), "Transferred: %.2f to %s, New Balance: %.2f. Date And Time: %s ",
+                 amount, recipient_username, users[logged_in_user].balance, datetime);
         record_transaction_for_user(sender_transaction);
 
         // Запись транзакции для получателя
@@ -325,11 +374,81 @@ void view_recent_transactions() {
         return;
     }
 
+    // Считаем количество транзакций
     char line[200];
-    printf("\nTransactions for user %s:\n", users[logged_in_user].username);
+    int total_transactions = 0;
     while (fgets(line, sizeof(line), file)) {
-        printf("%s", line);
+        total_transactions++;
     }
+    
+    // Переходим в начало файла
+    fseek(file, 0, SEEK_SET);
+
+    // Показываем только последние 10 транзакций
+    int start_line = total_transactions - 10;
+    int current_line = 0;
+
+    printf("\nLatest 10 transactions for user %s:\n", users[logged_in_user].username);
+    while (fgets(line, sizeof(line), file)) {
+        if (current_line >= start_line) {
+            printf("%s", line);
+        }
+        current_line++;
+    }
+
+    fclose(file);
+
+    // Запрашиваем у пользователя выбор дальнейших действий
+    char choice;
+    while (1) {
+        printf("\nDo you want to:\n");
+        printf("1. Search transactions by date\n");
+        printf("2. Return to the main menu\n");
+        printf("Enter your choice (1 or 2): ");
+        clear_input_buffer();
+        scanf("%c", &choice);
+
+        if (choice == '1') {
+            view_transactions_by_date();  // Переходим к поиску транзакций по дате
+            break;  // Завершаем текущую функцию
+        } else if (choice == '2') {
+            return;  // Возвращаемся в главное меню
+        } else {
+            printf("Invalid choice. Please enter 1 or 2.\n");
+        }
+    }
+}
+
+void view_transactions_by_date() {
+    char date[11];
+    printf("Enter the date to search (DD-MM-YYYY): ");
+    clear_input_buffer();
+    fgets(date, sizeof(date), stdin);
+    date[strcspn(date, "\n")] = '\0';  // Убираем символ новой строки
+
+    char filename[MAX_NAME + 15];
+    snprintf(filename, sizeof(filename), "%s_transactions.txt", users[logged_in_user].username);
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        printf("No transaction records found.\n");
+        return;
+    }
+
+    char line[200];
+    int found = 0;
+
+    printf("\nTransactions on %s for user %s:\n", date, users[logged_in_user].username);
+    while (fgets(line, sizeof(line), file)) {
+        if (strstr(line, date)) {  // Проверяем, содержит ли строка дату
+            printf("%s", line);
+            found = 1;
+        }
+    }
+
+    if (!found) {
+        printf("No transactions found for the specified date.\n");
+    }
+
     fclose(file);
 }
 
@@ -379,3 +498,8 @@ void clear_input_buffer() {
     int c;
     while ((c = getchar()) != '\n' && c != EOF);
 }
+
+
+
+
+
