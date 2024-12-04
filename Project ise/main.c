@@ -139,7 +139,7 @@ void get_time(char *datetime, size_t size) {
              local_time->tm_year + 1900,    // Год (с 1900, поэтому +1900)
              local_time->tm_hour,           // Часы
              local_time->tm_min,
-             local_time->tm_sec);          
+             local_time->tm_sec);
 }
 
 void login_user() {
