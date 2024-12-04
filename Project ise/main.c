@@ -293,6 +293,8 @@ void deposit_money() {
 
 void withdraw_money() {
     float amount;
+    char datetime[50];
+    get_time(datetime, sizeof(datetime));
     printf("Enter amount to withdraw: ");
     scanf("%f", &amount);
 
@@ -301,7 +303,7 @@ void withdraw_money() {
         printf("Withdrawal successful! New balance: %.2f\n", users[logged_in_user].balance);
 
         char transaction[100];
-        snprintf(transaction, sizeof(transaction), "Withdrew: %.2f, New Balance: %.2f", amount, users[logged_in_user].balance);
+        snprintf(transaction, sizeof(transaction), "Withdrew: %.2f, New Balance: %.2f. Date And Time: %s ", amount, users[logged_in_user].balance,datetime);
         record_transaction_for_user(transaction);
         save_users();
     } else {
@@ -342,8 +344,8 @@ void transfer_money() {
 
         // Запись транзакции для получателя
         char recipient_transaction[200];
-        snprintf(recipient_transaction, sizeof(recipient_transaction), "Received: %.2f from %s, New Balance: %.2f",
-                 amount, users[logged_in_user].username, users[recipient_index].balance);
+        snprintf(recipient_transaction, sizeof(recipient_transaction), "Received: %.2f from %s, New Balance: %.2f. Date And Time: %s ",
+                 amount, users[logged_in_user].username, users[recipient_index].balance, datetime);
         
         // Создаем файл транзакций получателя
         char filename[MAX_NAME + 15];
