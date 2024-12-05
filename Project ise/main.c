@@ -8,7 +8,7 @@
 #define MAX_USERS 100
 #define MAX_EMAIL 50
 
-// Структура для хранения данных пользователя
+
 typedef struct {
     char username[MAX_NAME];
     char password[MAX_PASSWORD];
@@ -17,12 +17,11 @@ typedef struct {
     float daily_transaction_total;
 } User;
 
-// Глобальные переменные
 User users[MAX_USERS];
 int user_count = 0;
 int logged_in_user = -1;
 
-// Объявления функций
+
 void register_user();
 void login_user();
 void reset_password(int user_index);
@@ -40,7 +39,7 @@ int find_user_by_username(const char* username);
 void clear_input_buffer();
 int get_valid_choice(int min, int max);
 
-// Основная функция
+
 int main() {
     load_users();
 
@@ -68,7 +67,6 @@ int main() {
     }
 }
 
-// Функция для регистрации нового пользователя
 void register_user() {
     char username[MAX_NAME], password[MAX_PASSWORD], email[MAX_EMAIL];
 
@@ -103,7 +101,6 @@ void register_user() {
     printf("Registration successful!\n");
 }
 
-// Функция для поиска пользователя по имени
 int find_user_by_username(const char* username) {
     for (int i = 0; i < user_count; i++) {
         if (strcmp(users[i].username, username) == 0) {
@@ -113,31 +110,29 @@ int find_user_by_username(const char* username) {
     return -1;
 }
 
-// Функция для авторизации пользователя
 void get_time(char *datetime, size_t size) {
     time_t current_time;
     struct tm *local_time;
 
-    // Получаем текущее время
     current_time = time(NULL);
     if (current_time == -1) {
         printf("Error getting current time\n");
         return;
     }
 
-    // Преобразуем текущее время в структуру tm
+
     local_time = localtime(&current_time);
     if (local_time == NULL) {
         printf("Error converting time to local time\n");
         return;
     }
 
-    // Форматируем строку с датой и временем
+
     snprintf(datetime, size, "%02d-%02d-%04d,%02d:%02d:%02d",
-             local_time->tm_mday,           // День
-             local_time->tm_mon + 1,        // Месяц (с 0, поэтому +1)
-             local_time->tm_year + 1900,    // Год (с 1900, поэтому +1900)
-             local_time->tm_hour,           // Часы
+             local_time->tm_mday,
+             local_time->tm_mon + 1,
+             local_time->tm_year + 1900,
+             local_time->tm_hour,
              local_time->tm_min,
              local_time->tm_sec);
 }
@@ -173,14 +168,14 @@ void login_user() {
         }
     }
     
-    // After 2 failed attempts, prompt for password reset
+
     char choice;
     while (1) {
         printf("You have entered the wrong password 2 times. Do you want to reset your password? (y/n): ");
         scanf("%c", &choice);
         
         if (choice == 'y' || choice == 'Y') {
-            reset_password(user_index);  // Call reset password function
+            reset_password(user_index);  
             return; // Exit the login function
         } else if (choice == 'n' || choice == 'N') {
             printf("Password reset canceled.\n");
@@ -191,41 +186,37 @@ void login_user() {
     }
 }
 
-// Функция для сброса пароля
+
 void reset_password(int user_index) {
     char email[MAX_EMAIL];
     char new_password[MAX_PASSWORD];
     int retry_count = 0;
 
-    while (retry_count < 3) {  // Даем 3 попытки для ввода email
+    while (retry_count < 3) {
         printf("Enter your email: ");
         fgets(email, MAX_EMAIL, stdin);
         email[strcspn(email, "\n")] = '\0';
 
-        // Проверяем, совпадает ли введённый email с записанным
         if (strcmp(users[user_index].email, email) != 0) {
             retry_count++;
             printf("Email does not match our records! Attempts left: %d\n", 3 - retry_count);
             if (retry_count == 3) {
                 printf("You have exceeded the maximum attempts for resetting the password.\n");
-                return;  // Прекращаем попытки сброса пароля после 3 неверных вводов
+                return;
             }
         } else {
-            // Если email совпал, спрашиваем новый пароль
             printf("Enter your new password: ");
             fgets(new_password, MAX_PASSWORD, stdin);
             new_password[strcspn(new_password, "\n")] = '\0';
 
-            // Обновляем пароль пользователя
             strcpy(users[user_index].password, new_password);
             save_users();
             printf("Password reset successfully!\n");
-            return;  // Успешный сброс пароля
+            return;
         }
     }
 }
 
-// Функция для управления сессией пользователя
 void manage_user_session() {
     while (1) {
         printf("\n--- User Menu ---\n");
@@ -261,7 +252,6 @@ void manage_user_session() {
     }
 }
 
-// Функция для записи транзакции
 void record_transaction_for_user(const char* transaction) {
     char filename[MAX_NAME + 15];
     snprintf(filename, sizeof(filename), "personal_transactions/%s_transactions.txt", users[logged_in_user].username);
@@ -274,7 +264,6 @@ void record_transaction_for_user(const char* transaction) {
     fclose(file);
 }
 
-// Функции пополнения, снятия, перевода и просмотра баланса
 void deposit_money() {
     char datetime[50];
     float amount;
@@ -336,18 +325,15 @@ void transfer_money() {
         users[recipient_index].balance += amount;
         printf("Transfer successful! Your new balance: %.2f\n", users[logged_in_user].balance);
 
-        // Запись транзакции для отправителя
         char sender_transaction[200];
         snprintf(sender_transaction, sizeof(sender_transaction), "Transferred: %.2f to %s, New Balance: %.2f. Date And Time: %s ",
                  amount, recipient_username, users[logged_in_user].balance, datetime);
         record_transaction_for_user(sender_transaction);
 
-        // Запись транзакции для получателя
         char recipient_transaction[200];
         snprintf(recipient_transaction, sizeof(recipient_transaction), "Received: %.2f from %s, New Balance: %.2f. Date And Time: %s ",
                  amount, users[logged_in_user].username, users[recipient_index].balance, datetime);
         
-        // Создаем файл транзакций получателя
         char filename[MAX_NAME + 15];
         snprintf(filename, sizeof(filename), "personal_transactions/%s_transactions.txt", users[recipient_index].username);
         FILE *recipient_file = fopen(filename, "a");
@@ -376,17 +362,14 @@ void view_recent_transactions() {
         return;
     }
 
-    // Считаем количество транзакций
     char line[200];
     int total_transactions = 0;
     while (fgets(line, sizeof(line), file)) {
         total_transactions++;
     }
     
-    // Переходим в начало файла
     fseek(file, 0, SEEK_SET);
 
-    // Показываем только последние 10 транзакций
     int start_line = total_transactions - 10;
     int current_line = 0;
 
@@ -400,7 +383,6 @@ void view_recent_transactions() {
 
     fclose(file);
 
-    // Запрашиваем у пользователя выбор дальнейших действий
     char choice;
     while (1) {
         printf("\nDo you want to:\n");
@@ -454,7 +436,6 @@ void view_transactions_by_date() {
     fclose(file);
 }
 
-// Валидация ввода
 int get_valid_choice(int min, int max) {
     int choice;
     while (1) {
@@ -467,7 +448,6 @@ int get_valid_choice(int min, int max) {
     }
 }
 
-// Чтение и запись пользователей в файл
 void save_users() {
     FILE *file = fopen("users.txt", "w");
     if (!file) {
@@ -495,7 +475,6 @@ void load_users() {
     fclose(file);
 }
 
-// Очистка буфера ввода
 void clear_input_buffer() {
     int c;
     while ((c = getchar()) != '\n' && c != EOF);
