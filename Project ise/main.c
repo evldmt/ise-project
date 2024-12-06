@@ -41,6 +41,7 @@ int find_user_by_email(const char* email);
 void clear_input_buffer();
 int get_valid_choice(int min, int max);
 void get_password(char *password, int type);
+int is_valid_email(const char *email);
 
 
 int main() {
@@ -88,6 +89,11 @@ void register_user() {
     printf("Enter email: ");
     fgets(email, MAX_EMAIL, stdin);
     email[strcspn(email, "\n")] = '\0';
+
+    if (!is_valid_email(email)) {
+        printf("Invalid email address. Please try again.\n");
+        return;
+    }
 
     if (find_user_by_email(email) != -1) {
         printf("User with this email already exists!\n");
@@ -518,6 +524,31 @@ void load_users() {
 void clear_input_buffer() {
     int c;
     while ((c = getchar()) != '\n' && c != EOF);
+}
+
+int is_valid_email(const char *email) {
+    if (email == NULL || strlen(email) == 0) {
+        return 0;
+    }
+
+    const char *at = strchr(email, '@');
+
+    if (at == NULL || at == email || *(at + 1) == '\0') {
+        return 0;
+    }
+
+    const char *dot = strchr(at + 1, '.');
+    if (dot == NULL || *(dot + 1) == '\0') {
+        return 0;
+    }
+
+    for (const char *c = email; *c; ++c) {
+        if (!isalnum(*c) && *c != '@' && *c != '.' && *c != '_' && *c != '-') {
+            return 0;
+        }
+    }
+
+    return 1;
 }
 
 
