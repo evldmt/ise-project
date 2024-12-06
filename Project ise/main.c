@@ -4,7 +4,7 @@
 #include <time.h>
 #include <conio.h>
 
-#define MAX_NAME 50
+#define MAX_NAME 20
 #define MAX_PASSWORD 20
 #define MAX_USERS 100
 #define MAX_EMAIL 50
@@ -87,6 +87,7 @@ void register_user() {
     }
 
     printf("Enter email: ");
+    clear_input_buffer();
     fgets(email, MAX_EMAIL, stdin);
     email[strcspn(email, "\n")] = '\0';
 
@@ -299,7 +300,7 @@ void manage_user_session() {
 }
 
 void record_transaction_for_user(const char* transaction) {
-    char filename[MAX_NAME + 15];
+    char filename[MAX_NAME + 50];
     snprintf(filename, sizeof(filename), "personal_transactions/%s_transactions.txt", users[logged_in_user].username);
     FILE *file = fopen(filename, "a");
     if (!file) {
@@ -321,7 +322,7 @@ void deposit_money() {
     printf("Deposit successful! New balance: %.2f\n", users[logged_in_user].balance);
 
     char transaction[100];
-    snprintf(transaction, sizeof(transaction), "Deposited: %.2f, New Balance: %.2f. Date And Time: %s", amount, users[logged_in_user].balance,datetime);
+    snprintf(transaction, sizeof(transaction), "1 %.2f %.2f %s", amount, users[logged_in_user].balance,datetime);
     record_transaction_for_user(transaction);
     save_users();
 }
@@ -338,7 +339,7 @@ void withdraw_money() {
         printf("Withdrawal successful! New balance: %.2f\n", users[logged_in_user].balance);
 
         char transaction[100];
-        snprintf(transaction, sizeof(transaction), "Withdrew: %.2f, New Balance: %.2f. Date And Time: %s ", amount, users[logged_in_user].balance,datetime);
+        snprintf(transaction, sizeof(transaction), "2 %.2f %.2f %s", amount, users[logged_in_user].balance,datetime);
         record_transaction_for_user(transaction);
         save_users();
     } else {
@@ -372,15 +373,15 @@ void transfer_money() {
         printf("Transfer successful! Your new balance: %.2f\n", users[logged_in_user].balance);
 
         char sender_transaction[200];
-        snprintf(sender_transaction, sizeof(sender_transaction), "Transferred: %.2f to %s, New Balance: %.2f. Date And Time: %s ",
+        snprintf(sender_transaction, sizeof(sender_transaction), "3 %.2f %s %.2f %s",
                  amount, recipient_username, users[logged_in_user].balance, datetime);
         record_transaction_for_user(sender_transaction);
 
         char recipient_transaction[200];
-        snprintf(recipient_transaction, sizeof(recipient_transaction), "Received: %.2f from %s, New Balance: %.2f. Date And Time: %s ",
+        snprintf(recipient_transaction, sizeof(recipient_transaction), "4 %.2f %s %.2f %s",
                  amount, users[logged_in_user].username, users[recipient_index].balance, datetime);
         
-        char filename[MAX_NAME + 15];
+        char filename[MAX_NAME + 50];
         snprintf(filename, sizeof(filename), "personal_transactions/%s_transactions.txt", users[recipient_index].username);
         FILE *recipient_file = fopen(filename, "a");
         if (recipient_file) {
@@ -400,7 +401,7 @@ void view_balance() {
 }
 
 void view_recent_transactions() {
-    char filename[MAX_NAME + 15];
+    char filename[MAX_NAME + 50];
     snprintf(filename, sizeof(filename), "personal_transactions/%s_transactions.txt", users[logged_in_user].username);
     FILE *file = fopen(filename, "r");
     if (!file) {
@@ -418,11 +419,31 @@ void view_recent_transactions() {
 
     int start_line = total_transactions - 10;
     int current_line = 0;
+    
+    int transaction_type_num;
+    float amount, balance;
+    char date_time[30], transaction_type[50], recipient_or_sender[20];
 
     printf("\nLatest 10 transactions for user %s:\n", users[logged_in_user].username);
+    printf("    Transaction    |    Amount    |    Balance    |    Date and Time    |       Recipient      |       Sender\n");
+    printf("======================================================================================================================\n");
     while (fgets(line, sizeof(line), file)) {
         if (current_line >= start_line) {
-            printf("%s", line);
+            if (sscanf(line, "%d %f %f %s", &transaction_type_num, &amount, &balance, date_time) == 4) {
+                strcpy(transaction_type, (transaction_type_num == 1) ? "Deposited" : "Withdrew");
+                printf(" %-17s | %-12.2f | %-13.2f | %-19s | %-20s |\n", transaction_type, amount, balance, date_time, "");
+            }
+            else if (sscanf(line, "%d %f %s %f %s", &transaction_type_num, &amount, recipient_or_sender, &balance, date_time) == 5)
+            {
+                strcpy(transaction_type, (transaction_type_num == 3) ? "Transferred" : "Received");
+                if (transaction_type_num == 4)
+                {
+                    printf(" %-17s | %-12.2f | %-13.2f | %-19s | %-20s | %s\n", transaction_type, amount, balance, date_time, "", recipient_or_sender);
+                }
+                else {
+                    printf(" %-17s | %-12.2f | %-13.2f | %-19s | %-20s | %s\n", transaction_type, amount, balance, date_time, recipient_or_sender, "");
+                }
+            }
         }
         current_line++;
     }
@@ -456,7 +477,7 @@ void view_transactions_by_date() {
     fgets(date, sizeof(date), stdin);
     date[strcspn(date, "\n")] = '\0';
 
-    char filename[MAX_NAME + 15];
+    char filename[MAX_NAME + 50];
     snprintf(filename, sizeof(filename), "personal_transactions/%s_transactions.txt", users[logged_in_user].username);
     FILE *file = fopen(filename, "r");
     if (!file) {
@@ -467,10 +488,31 @@ void view_transactions_by_date() {
     char line[200];
     int found = 0;
 
+    int transaction_type_num;
+    float amount, balance;
+    char date_time[30], transaction_type[50], recipient_or_sender[20];
+
     printf("\nTransactions on %s for user %s:\n", date, users[logged_in_user].username);
+    printf("    Transaction    |    Amount    |    Balance    |    Date and Time    |       Recipient      |       Sender\n");
+    printf("======================================================================================================================\n");
     while (fgets(line, sizeof(line), file)) {
         if (strstr(line, date)) {
-            printf("%s", line);
+            // printf("%s", line);
+            if (sscanf(line, "%d %f %f %s", &transaction_type_num, &amount, &balance, date_time) == 4) {
+                strcpy(transaction_type, (transaction_type_num == 1) ? "Deposited" : "Withdrew");
+                printf(" %-17s | %-12.2f | %-13.2f | %-19s | %-20s |\n", transaction_type, amount, balance, date_time, "");
+            }
+            else if (sscanf(line, "%d %f %s %f %s", &transaction_type_num, &amount, recipient_or_sender, &balance, date_time) == 5)
+            {
+                strcpy(transaction_type, (transaction_type_num == 3) ? "Transferred" : "Received");
+                if (transaction_type_num == 4)
+                {
+                    printf(" %-17s | %-12.2f | %-13.2f | %-19s | %-20s | %s\n", transaction_type, amount, balance, date_time, "", recipient_or_sender);
+                }
+                else {
+                    printf(" %-17s | %-12.2f | %-13.2f | %-19s | %-20s | %s\n", transaction_type, amount, balance, date_time, recipient_or_sender, "");
+                }
+            }
             found = 1;
         }
     }
