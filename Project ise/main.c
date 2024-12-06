@@ -88,10 +88,6 @@ void register_user() {
     fgets(email, MAX_EMAIL, stdin);
     email[strcspn(email, "\n")] = '\0';
 
-    // printf("Enter password: ");
-    // fgets(password, MAX_PASSWORD, stdin);
-    // password[strcspn(password, "\n")] = '\0';
-
     get_password(password, 1);
 
     User new_user = {0};
@@ -187,10 +183,6 @@ void login_user() {
     }
     
     while (attempts < 2) {
-        // printf("Enter password: ");
-        // fgets(password, MAX_PASSWORD, stdin);
-        // password[strcspn(password, "\n")] = '\0';
-
         get_password(password, 1);
         
         if (strcmp(users[user_index].password, password) == 0) {
@@ -211,10 +203,10 @@ void login_user() {
         
         if (choice == 'y' || choice == 'Y') {
             reset_password(user_index);  
-            return; // Exit the login function
+            return;
         } else if (choice == 'n' || choice == 'N') {
             printf("Password reset canceled.\n");
-            return; // Exit the login function
+            return;
         } else {
             printf("Invalid input. Please enter 'y' or 'n'.\n");
         }
@@ -240,10 +232,6 @@ void reset_password(int user_index) {
                 return;
             }
         } else {
-            // printf("Enter your new password: ");
-            // fgets(new_password, MAX_PASSWORD, stdin);
-            // new_password[strcspn(new_password, "\n")] = '\0';
-
             get_password(new_password, 2);
 
             strcpy(users[user_index].password, new_password);
@@ -430,10 +418,10 @@ void view_recent_transactions() {
         scanf("%c", &choice);
 
         if (choice == '1') {
-            view_transactions_by_date();  // Переходим к поиску транзакций по дате
-            break;  // Завершаем текущую функцию
+            view_transactions_by_date();
+            break;
         } else if (choice == '2') {
-            return;  // Возвращаемся в главное меню
+            return;
         } else {
             printf("Invalid choice. Please enter 1 or 2.\n");
         }
@@ -445,7 +433,7 @@ void view_transactions_by_date() {
     printf("Enter the date to search (DD-MM-YYYY): ");
     clear_input_buffer();
     fgets(date, sizeof(date), stdin);
-    date[strcspn(date, "\n")] = '\0';  // Убираем символ новой строки
+    date[strcspn(date, "\n")] = '\0';
 
     char filename[MAX_NAME + 15];
     snprintf(filename, sizeof(filename), "personal_transactions/%s_transactions.txt", users[logged_in_user].username);
@@ -460,7 +448,7 @@ void view_transactions_by_date() {
 
     printf("\nTransactions on %s for user %s:\n", date, users[logged_in_user].username);
     while (fgets(line, sizeof(line), file)) {
-        if (strstr(line, date)) {  // Проверяем, содержит ли строка дату
+        if (strstr(line, date)) {
             printf("%s", line);
             found = 1;
         }
