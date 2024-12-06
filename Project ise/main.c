@@ -2,6 +2,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
+#include <conio.h>
 
 #define MAX_NAME 50
 #define MAX_PASSWORD 20
@@ -38,6 +39,7 @@ void load_users();
 int find_user_by_username(const char* username);
 void clear_input_buffer();
 int get_valid_choice(int min, int max);
+void get_password(char *password, int type);
 
 
 int main() {
@@ -86,9 +88,11 @@ void register_user() {
     fgets(email, MAX_EMAIL, stdin);
     email[strcspn(email, "\n")] = '\0';
 
-    printf("Enter password: ");
-    fgets(password, MAX_PASSWORD, stdin);
-    password[strcspn(password, "\n")] = '\0';
+    // printf("Enter password: ");
+    // fgets(password, MAX_PASSWORD, stdin);
+    // password[strcspn(password, "\n")] = '\0';
+
+    get_password(password, 1);
 
     User new_user = {0};
     strcpy(new_user.username, username);
@@ -108,6 +112,35 @@ int find_user_by_username(const char* username) {
         }
     }
     return -1;
+}
+
+void get_password(char *password, int type) {
+    if(type == 1){
+        printf("Enter password: ");
+    }
+    else if(type == 2){
+        printf("Enter your new password: ");
+    }
+    
+    int i = 0;
+    char c;
+    while (1) {
+        c = _getch();
+
+        if (c == '\r') { 
+            break;
+        } else if (c == '\b') {
+            if (i > 0) {
+                printf("\b \b");
+                i--;
+            }
+        } else if (i < MAX_PASSWORD) {
+            printf("*");
+            password[i++] = c;
+        }
+    }
+    password[i] = '\0';
+    printf("\n");
 }
 
 void get_time(char *datetime, size_t size) {
@@ -154,9 +187,11 @@ void login_user() {
     }
     
     while (attempts < 2) {
-        printf("Enter password: ");
-        fgets(password, MAX_PASSWORD, stdin);
-        password[strcspn(password, "\n")] = '\0';
+        // printf("Enter password: ");
+        // fgets(password, MAX_PASSWORD, stdin);
+        // password[strcspn(password, "\n")] = '\0';
+
+        get_password(password, 1);
         
         if (strcmp(users[user_index].password, password) == 0) {
             logged_in_user = user_index;
@@ -205,9 +240,11 @@ void reset_password(int user_index) {
                 return;
             }
         } else {
-            printf("Enter your new password: ");
-            fgets(new_password, MAX_PASSWORD, stdin);
-            new_password[strcspn(new_password, "\n")] = '\0';
+            // printf("Enter your new password: ");
+            // fgets(new_password, MAX_PASSWORD, stdin);
+            // new_password[strcspn(new_password, "\n")] = '\0';
+
+            get_password(new_password, 2);
 
             strcpy(users[user_index].password, new_password);
             save_users();
