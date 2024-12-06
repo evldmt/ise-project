@@ -37,6 +37,7 @@ void record_transaction_for_user(const char* transaction);
 void save_users();
 void load_users();
 int find_user_by_username(const char* username);
+int find_user_by_email(const char* email);
 void clear_input_buffer();
 int get_valid_choice(int min, int max);
 void get_password(char *password, int type);
@@ -88,6 +89,11 @@ void register_user() {
     fgets(email, MAX_EMAIL, stdin);
     email[strcspn(email, "\n")] = '\0';
 
+    if (find_user_by_email(email) != -1) {
+        printf("User with this email already exists!\n");
+        return;
+    }
+
     get_password(password, 1);
 
     User new_user = {0};
@@ -104,6 +110,15 @@ void register_user() {
 int find_user_by_username(const char* username) {
     for (int i = 0; i < user_count; i++) {
         if (strcmp(users[i].username, username) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int find_user_by_email(const char* email) {
+    for (int i = 0; i < user_count; i++) {
+        if (strcmp(users[i].email, email) == 0) {
             return i;
         }
     }
