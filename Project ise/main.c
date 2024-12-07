@@ -7,6 +7,7 @@
 #define MAX_PASSWORD 20
 #define MAX_USERS 100
 #define MAX_EMAIL 50
+#define MAX_DATE 11
 
 
 typedef struct {
@@ -15,6 +16,8 @@ typedef struct {
     char email[MAX_EMAIL];
     float balance;
     float daily_transaction_total;
+    float transaction_limit;
+    char last_transaction_date[MAX_DATE];
 } User;
 
 User users[MAX_USERS];
@@ -35,6 +38,7 @@ void view_transactions_by_date();
 void record_transaction_for_user(const char* transaction);
 void save_users();
 void load_users();
+void reset_daily_limit_if_needed();
 int find_user_by_username(const char* username);
 int find_user_by_email(const char* email);
 void clear_input_buffer();
@@ -108,6 +112,7 @@ void register_user() {
     strcpy(new_user.email, email);
     strcpy(new_user.password, password);
     new_user.balance = 0.0f;
+    new_user.transaction_limit = 1000.0f;
 
     users[user_count++] = new_user;
     save_users();
@@ -157,6 +162,18 @@ void get_time(char *datetime, size_t size) {
              local_time->tm_hour,
              local_time->tm_min,
              local_time->tm_sec);
+}
+
+void get_current_date(char *date, size_t size) {
+    time_t current_time = time(NULL);
+    struct tm *local_time = localtime(&current_time);
+
+    if (local_time) {
+        snprintf(date, size, "%02d-%02d-%04d",
+                 local_time->tm_mday,
+                 local_time->tm_mon + 1,
+                 local_time->tm_year + 1900);
+    }
 }
 
 void login_user() {
@@ -303,11 +320,17 @@ void deposit_money() {
 }
 
 void withdraw_money() {
+    reset_daily_limit_if_needed();
     float amount;
     char datetime[50];
     get_time(datetime, sizeof(datetime));
     printf("Enter amount to withdraw: ");
     scanf("%f", &amount);
+    
+    if (amount > users[logged_in_user].transaction_limit) {
+           printf("Transaction exceeds your limit of %.2f!\n", users[logged_in_user].transaction_limit);
+           return;
+       }
 
     if (users[logged_in_user].balance >= amount) {
         users[logged_in_user].balance -= amount;
@@ -323,11 +346,12 @@ void withdraw_money() {
 }
 
 void transfer_money() {
+    reset_daily_limit_if_needed();
     char recipient_username[MAX_NAME];
     float amount;
     char datetime[50];
     get_time(datetime,sizeof(datetime));
-
+    
     printf("Enter recipient username: ");
     clear_input_buffer();
     fgets(recipient_username, MAX_NAME, stdin);
@@ -342,6 +366,11 @@ void transfer_money() {
     printf("Enter amount to transfer: ");
     scanf("%f", &amount);
 
+    if (amount > users[logged_in_user].transaction_limit) {
+           printf("Transaction exceeds your limit of %.2f!\n", users[logged_in_user].transaction_limit);
+           return;
+       }
+    
     if (users[logged_in_user].balance >= amount) {
         users[logged_in_user].balance -= amount;
         users[recipient_index].balance += amount;
@@ -519,7 +548,13 @@ void save_users() {
     }
 
     for (int i = 0; i < user_count; i++) {
-        fprintf(file, "%s %s %s %.2f\n", users[i].username, users[i].password, users[i].email, users[i].balance);
+        fprintf(file, "%s %s %s %2f %.2f %s\n",
+                users[i].username,
+                users[i].password,
+                users[i].email,
+                users[i].balance,
+                users[i].transaction_limit,
+                users[i].last_transaction_date);
     }
     fclose(file);
 }
@@ -528,11 +563,14 @@ void load_users() {
     FILE *file = fopen("users.txt", "r");
     if (!file) return;
 
-    while (fscanf(file, "%s %s %s %f",
+    while (fscanf(file, "%s %s %s %f %f %f %s",
            users[user_count].username,
            users[user_count].password,
            users[user_count].email,
-           &users[user_count].balance) == 4) {
+           &users[user_count].balance,
+                  &users[user_count].transaction_limit,
+                  &users[user_count].daily_transaction_total,
+                  users[user_count].last_transaction_date) == 7) {
         user_count++;
     }
     fclose(file);
@@ -568,6 +606,15 @@ int is_valid_email(const char *email) {
     return 1;
 }
 
+void reset_daily_limit_if_needed() {
+    char current_date[MAX_DATE];
+    get_current_date(current_date, sizeof(current_date));
+
+    if (strcmp(users[logged_in_user].last_transaction_date, current_date) != 0) {
+        users[logged_in_user].daily_transaction_total = 0.0f;
+        strcpy(users[logged_in_user].last_transaction_date, current_date);
+    }
+}
 
 
 
