@@ -2,7 +2,18 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#ifdef __APPLE__ // macOS
+#include <termios.h>
+#elif defined(_WIN32) // Windows
 #include <conio.h>
+#else
+#error "Unsupported platform"
+#endif
+
+
 
 #define MAX_NAME 20
 #define MAX_PASSWORD 20
@@ -612,21 +623,21 @@ void reset_daily_limit_if_needed() {
 }
 
 void get_password(char *password, int type) {
-    if(type == 1){
+    if (type == 1) {
         printf("Enter password: ");
-    }
-    else if(type == 2){
+    } else if (type == 2) {
         printf("Enter your new password: ");
     }
-    
-    int i = 0;
+
     char c;
+    int i = 0;
+
+#ifdef _WIN32
     while (1) {
         c = _getch();
-
-        if (c == '\r') { 
+        if (c == '\r') { // Enter key
             break;
-        } else if (c == '\b') {
+        } else if (c == '\b') { // Backspace key
             if (i > 0) {
                 printf("\b \b");
                 i--;
@@ -636,10 +647,33 @@ void get_password(char *password, int type) {
             password[i++] = c;
         }
     }
-    password[i] = '\0';
-    printf("\n");
+#elif __linux__ || __APPLE__
+    struct termios oldt, newt;
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~ECHO; // Disable echo
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
+    while (1) {
+        c = getchar();
+        if (c == '\n' || c == '\r') { // Enter key
+            break;
+        } else if (c == '\b' || c == 127) { // Backspace key
+            if (i > 0) {
+                printf("\b \b");
+                i--;
+            }
+        } else if (i < MAX_PASSWORD) {
+            printf("*");
+            password[i++] = c;
+        }
+    }
+
+    // Restore terminal settings after password input
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+#endif
+
+    password[i] = '\0'; // Null-terminate the password string
+    printf("\n"); // Move to the next line after entering the password
 }
-
-
-
 
