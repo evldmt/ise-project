@@ -554,13 +554,13 @@ void save_users() {
     }
 
     for (int i = 0; i < user_count; i++) {
-        fprintf(file, "%s %s %s %2f %.2f %s\n",
+        fprintf(file, "%s %s %s %2f %.2f %.2f\n",
                 users[i].username,
                 users[i].password,
                 users[i].email,
                 users[i].balance,
                 users[i].transaction_limit,
-                users[i].last_transaction_date);
+                users[i].daily_transaction_total);
     }
     fclose(file);
 }
@@ -569,14 +569,13 @@ void load_users() {
     FILE *file = fopen("users.txt", "r");
     if (!file) return;
 
-    while (fscanf(file, "%s %s %s %f %f %f %s",
+    while (fscanf(file, "%s %s %s %f %f %f",
            users[user_count].username,
            users[user_count].password,
            users[user_count].email,
            &users[user_count].balance,
                   &users[user_count].transaction_limit,
-                  &users[user_count].daily_transaction_total,
-                  users[user_count].last_transaction_date) == 7) {
+                  &users[user_count].daily_transaction_total) == 6) {
         user_count++;
     }
     fclose(file);
