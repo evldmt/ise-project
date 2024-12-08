@@ -50,7 +50,6 @@ void view_transactions_by_date();
 void record_transaction_for_user(const char* transaction);
 void save_users();
 void load_users();
-void reset_daily_limit_if_needed();
 int find_user_by_username(const char* username);
 int find_user_by_email(const char* email);
 void clear_input_buffer();
@@ -122,7 +121,7 @@ void register_user() {
     strcpy(new_user.email, email);
     strcpy(new_user.password, password);
     new_user.balance = 0.0f;
-    new_user.transaction_limit = 1000.0f;
+    new_user.transaction_limit = 100000.0f;
 
     users[user_count++] = new_user;
     save_users();
@@ -326,7 +325,6 @@ void deposit_money() {
 }
 
 void withdraw_money() {
-    reset_daily_limit_if_needed();
     float amount;
     char datetime[50];
     get_time(datetime, sizeof(datetime));
@@ -352,7 +350,6 @@ void withdraw_money() {
 }
 
 void transfer_money() {
-    reset_daily_limit_if_needed();
     char recipient_username[MAX_NAME];
     float amount;
     char datetime[50];
@@ -611,15 +608,6 @@ int is_valid_email(const char *email) {
     return 1;
 }
 
-void reset_daily_limit_if_needed() {
-    char current_date[MAX_DATE];
-    get_current_date(current_date, sizeof(current_date));
-
-    if (strcmp(users[logged_in_user].last_transaction_date, current_date) != 0) {
-        users[logged_in_user].daily_transaction_total = 0.0f;
-        strcpy(users[logged_in_user].last_transaction_date, current_date);
-    }
-}
 
 void get_password(char *password, int type) {
     if (type == 1) {
