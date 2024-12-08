@@ -1,6 +1,1 @@
-v 123 vadim 231308.00
-a 1234 a 245.00
-allah 123 1 1241130.00
-q q q 98990.00
-islam 123456 islam.com 99976.00
-qwerty 1234 islam.com 0.00
+v 123 v@gmail.com 1.000000 1000.00 08-12-2024

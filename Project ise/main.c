@@ -89,7 +89,6 @@ void register_user() {
     }
 
     printf("Enter email: ");
-    clear_input_buffer();
     fgets(email, MAX_EMAIL, stdin);
     email[strcspn(email, "\n")] = '\0';
 
